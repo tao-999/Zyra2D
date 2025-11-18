@@ -7,9 +7,8 @@ import { ColliderAABB } from '../components/ColliderAABB';
  * 非物理解算的 2D 碰撞系统：
  * - 每帧收集所有带 Transform + ColliderAABB 的实体
  * - 做 O(n^2) 碰撞检测
+ * - 考虑 layer/mask 过滤
  * - 将重叠对写入各自的 collider.contacts
- *
- * 不做位移修正，只提供“本帧与谁相撞”的信息，上层可自行处理。
  */
 export class CollisionSystem2D extends System {
   private colliders: {
@@ -37,7 +36,7 @@ export class CollisionSystem2D extends System {
     const n = list.length;
     if (n <= 1) return;
 
-    // 双重循环做 AABB 检测（小规模场景足够用）
+    // 双重循环做 AABB 检测
     for (let i = 0; i < n; i++) {
       const a = list[i];
       const ax1 = a.t.x + a.c.offsetX;
@@ -51,6 +50,13 @@ export class CollisionSystem2D extends System {
         const by1 = b.t.y + b.c.offsetY;
         const bx2 = bx1 + b.c.width;
         const by2 = by1 + b.c.height;
+
+        // layer/mask 过滤：双方都认为对方是“需要检测”的层
+        const layerOk =
+          (a.c.layer & b.c.mask) !== 0 &&
+          (b.c.layer & a.c.mask) !== 0;
+
+        if (!layerOk) continue;
 
         const overlap =
           ax1 < bx2 &&

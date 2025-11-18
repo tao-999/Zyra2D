@@ -2,21 +2,15 @@
  * 简单的 2D 相机：
  * - 维护一个世界坐标下的相机位置 (x, y)
  * - 维护缩放 zoom
- * - 视口大小由引擎初始化时传入
- *
- * 约定：
- * - (x, y) 表示“相机中心”在世界坐标中的位置
- * - world -> screen 转换：
- *   screenX = (worldX - x) * zoom + viewportWidth  / 2
- *   screenY = (worldY - y) * zoom + viewportHeight / 2
+ * - 视口大小由引擎初始化时传入，可在 resize 时更新
  */
 export class Camera2D {
   x = 0;
   y = 0;
   zoom = 1;
 
-  readonly viewportWidth: number;
-  readonly viewportHeight: number;
+  viewportWidth: number;
+  viewportHeight: number;
 
   constructor(viewportWidth: number, viewportHeight: number) {
     this.viewportWidth = viewportWidth;

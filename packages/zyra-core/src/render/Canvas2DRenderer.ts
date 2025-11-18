@@ -5,7 +5,7 @@ import type { Renderer } from './Renderer';
  */
 export class Canvas2DRenderer implements Renderer {
   private readonly ctx: CanvasRenderingContext2D;
-  private readonly background: string;
+  private clearColor: string;
 
   constructor(
     private readonly canvas: HTMLCanvasElement,
@@ -16,12 +16,21 @@ export class Canvas2DRenderer implements Renderer {
       throw new Error('Zyra2D: Failed to get 2D context from canvas');
     }
     this.ctx = ctx;
-    this.background = backgroundColor;
+    this.clearColor = backgroundColor;
+  }
+
+  setClearColor(color: string): void {
+    this.clearColor = color;
+  }
+
+  resize(width: number, height: number): void {
+    this.canvas.width = width;
+    this.canvas.height = height;
   }
 
   clear(): void {
     const { ctx, canvas } = this;
-    ctx.fillStyle = this.background;
+    ctx.fillStyle = this.clearColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
@@ -35,14 +44,77 @@ export class Canvas2DRenderer implements Renderer {
     y: number,
     rotation: number,
     scaleX: number,
-    scaleY: number
+    scaleY: number,
+    originX?: number,
+    originY?: number
   ): void {
     const { ctx } = this;
+
+    const ox = originX ?? image.width / 2;
+    const oy = originY ?? image.height / 2;
+
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(rotation);
     ctx.scale(scaleX, scaleY);
-    ctx.drawImage(image, -image.width / 2, -image.height / 2);
+    ctx.drawImage(image, -ox, -oy);
+    ctx.restore();
+  }
+
+  drawRect(
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    options?: {
+      color?: string;
+      lineWidth?: number;
+      filled?: boolean;
+    }
+  ): void {
+    const { ctx } = this;
+    const color = options?.color ?? '#00ff00';
+    const lineWidth = options?.lineWidth ?? 1;
+    const filled = options?.filled ?? false;
+
+    ctx.save();
+    if (filled) {
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, width, height);
+    } else {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lineWidth;
+      ctx.strokeRect(x, y, width, height);
+    }
+    ctx.restore();
+  }
+
+  drawText(
+    text: string,
+    x: number,
+    y: number,
+    options?: {
+      font?: string;
+      color?: string;
+      textAlign?: CanvasTextAlign;
+      textBaseline?: CanvasTextBaseline;
+      maxWidth?: number;
+    }
+  ): void {
+    const { ctx } = this;
+    ctx.save();
+
+    ctx.font = options?.font ?? '16px sans-serif';
+    ctx.fillStyle = options?.color ?? '#ffffff';
+    ctx.textAlign = options?.textAlign ?? 'left';
+    ctx.textBaseline = options?.textBaseline ?? 'alphabetic';
+
+    if (options?.maxWidth !== undefined) {
+      ctx.fillText(text, x, y, options.maxWidth);
+    } else {
+      ctx.fillText(text, x, y);
+    }
+
     ctx.restore();
   }
 

@@ -1,5 +1,6 @@
 import { Entity } from './Entity';
 import { System } from './System';
+import type { Component } from './Component';
 
 /**
  * World：持有所有实体和系统。
@@ -24,6 +25,29 @@ export class World {
   /** 标记实体为销毁（下一帧清理） */
   destroyEntity(entity: Entity): void {
     entity.destroy();
+  }
+
+  /** 获取当前所有实体（只读引用） */
+  getEntities(): readonly Entity[] {
+    return this.entities;
+  }
+
+  /**
+   * 根据组件类型获取实体列表：
+   *   world.getEntitiesWith(Transform, Sprite)
+   */
+  getEntitiesWith(
+    ...ctors: (new (...args: any[]) => Component)[]
+  ): Entity[] {
+    if (ctors.length === 0) return [...this.entities];
+    return this.entities.filter((e) =>
+      ctors.every((C) => e.hasComponent(C))
+    );
+  }
+
+  /** 自定义条件查询实体 */
+  query(predicate: (e: Entity) => boolean): Entity[] {
+    return this.entities.filter(predicate);
   }
 
   /** 每帧更新：先清理 dead entity，再跑所有系统 */
