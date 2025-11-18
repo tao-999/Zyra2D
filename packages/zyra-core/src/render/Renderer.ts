@@ -9,7 +9,7 @@ export interface Renderer {
   begin(): void;
 
   /**
-   * 绘制精灵：
+   * 绘制整张精灵：
    * - (x, y): 屏幕坐标
    * - rotation: 旋转（弧度）
    * - scaleX / scaleY: 缩放
@@ -17,6 +17,26 @@ export interface Renderer {
    */
   drawSprite(
     image: HTMLImageElement,
+    x: number,
+    y: number,
+    rotation: number,
+    scaleX: number,
+    scaleY: number,
+    originX?: number,
+    originY?: number
+  ): void;
+
+  /**
+   * 从 spritesheet 中绘制子区域（Tile / 帧等）：
+   * - (sx, sy, sw, sh): 源图中的区域
+   * - (x, y): 屏幕坐标
+   */
+  drawSpriteRegion(
+    image: HTMLImageElement,
+    sx: number,
+    sy: number,
+    sw: number,
+    sh: number,
     x: number,
     y: number,
     rotation: number,

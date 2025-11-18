@@ -4,9 +4,14 @@ import { Canvas2DRenderer } from '../render/Canvas2DRenderer';
 import { RenderSystem } from '../ecs/systems/RenderSystem';
 import { MotionSystem } from '../ecs/systems/MotionSystem';
 import { CollisionSystem2D } from '../ecs/systems/CollisionSystem2D';
+import { PhysicsSystem2D } from '../ecs/systems/PhysicsSystem2D';
+import { AnimationSystem2D } from '../ecs/systems/AnimationSystem2D';
 import { TextRenderSystem } from '../ecs/systems/TextRenderSystem';
 import { DebugDrawSystem } from '../ecs/systems/DebugDrawSystem';
+import { TileMapRenderSystem } from '../ecs/systems/TileMapRenderSystem';
+import { DebugOverlaySystem } from '../ecs/systems/DebugOverlaySystem';
 import { AssetManager } from '../assets/AssetManager';
+import { AudioManager } from '../audio/AudioManager';
 import { Input } from '../input/Input';
 import { Camera2D } from '../render/Camera2D';
 import { Time } from './Time';
@@ -27,6 +32,12 @@ export interface EngineOptions {
 
   /** 是否绘制碰撞体调试框 */
   debugDrawColliders?: boolean;
+
+  /** 是否显示调试 overlay（FPS / entity 等） */
+  showDebugOverlay?: boolean;
+
+  /** 世界重力，单位：世界坐标/秒²（默认 800，向下） */
+  gravityY?: number;
 }
 
 /**
@@ -36,6 +47,7 @@ export class Engine {
   readonly world: World;
   readonly renderer: Renderer;
   readonly assets: AssetManager;
+  readonly audio: AudioManager;
   readonly input: Input;
   readonly camera: Camera2D;
   readonly time: Time;
@@ -65,6 +77,8 @@ export class Engine {
       backgroundColor = '#000000',
       logger,
       debugDrawColliders = false,
+      showDebugOverlay = false,
+      gravityY = 800, // 默认重力
     } = options;
 
     this._width = width;
@@ -82,6 +96,7 @@ export class Engine {
 
     this.world = new World();
     this.assets = new AssetManager();
+    this.audio = new AudioManager();
     this.input = new Input(canvas);
     this.camera = new Camera2D(width, height);
     this.time = new Time();
@@ -91,15 +106,33 @@ export class Engine {
     this.camera.zoom = 1;
 
     // System 顺序：
-    // 1. 运动
-    this.world.addSystem(new MotionSystem());
-    // 2. 碰撞检测
+    // 1. 运动（包含世界重力）
+    this.world.addSystem(new MotionSystem(gravityY));
+    // 2. 动画（根据时间切换 Sprite 帧）
+    this.world.addSystem(new AnimationSystem2D(this.assets));
+    // 3. 碰撞检测（写入 contacts）
     this.world.addSystem(new CollisionSystem2D());
-    // 3. 精灵渲染
+    // 4. 物理分离解算（防止穿透，设置 onGround）
+    this.world.addSystem(new PhysicsSystem2D());
+    // 5. 瓦片地图渲染（背景）
+    this.world.addSystem(new TileMapRenderSystem(this.renderer, this.camera, this.assets));
+    // 6. 精灵渲染
     this.world.addSystem(new RenderSystem(this.renderer, this.camera));
-    // 4. 文本渲染（叠在精灵之上）
+    // 7. 文本渲染（叠在精灵之上）
     this.world.addSystem(new TextRenderSystem(this.renderer, this.camera));
-    // 5. Debug 碰撞框（可选）
+    // 8. Debug overlay（叠在最上层）
+    if (showDebugOverlay) {
+      this.world.addSystem(
+        new DebugOverlaySystem(this.renderer, this.camera, this.time, {
+          showFPS: true,
+          showFrameTime: true,
+          showEntityCount: true,
+          showCameraInfo: true,
+          showElapsed: false,
+        })
+      );
+    }
+    // 9. Debug 碰撞框（可选）
     if (debugDrawColliders) {
       this.world.addSystem(new DebugDrawSystem(this.renderer, this.camera));
     }
@@ -129,6 +162,7 @@ export class Engine {
     this.stop();
     this.world.clear();
     this.assets.clear();
+    this.audio.clear();
     this.input.dispose();
     this.events.clear();
     this.logger.info('Engine destroyed');
@@ -136,7 +170,6 @@ export class Engine {
 
   /**
    * 视口尺寸变化时调用：
-   * - 更新 canvas
    * - 更新 renderer
    * - 更新 camera 的 viewport
    */
@@ -166,7 +199,7 @@ export class Engine {
     this.input.beginFrame();
 
     try {
-      // 更新 ECS 世界
+      // 更新 ECS 世界（内部跑所有 System）
       this.world.update(dt);
     } catch (err) {
       this.logger.error('Error during world.update()', err);

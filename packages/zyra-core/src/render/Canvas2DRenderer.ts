@@ -1,7 +1,7 @@
 import type { Renderer } from './Renderer';
 
 /**
- * v0.1 的 Canvas2D 渲染实现，之后可以被 WebGL2 替换。
+ * v0.1 的 Canvas2D 渲染实现。
  */
 export class Canvas2DRenderer implements Renderer {
   private readonly ctx: CanvasRenderingContext2D;
@@ -58,6 +58,33 @@ export class Canvas2DRenderer implements Renderer {
     ctx.rotate(rotation);
     ctx.scale(scaleX, scaleY);
     ctx.drawImage(image, -ox, -oy);
+    ctx.restore();
+  }
+
+  drawSpriteRegion(
+    image: HTMLImageElement,
+    sx: number,
+    sy: number,
+    sw: number,
+    sh: number,
+    x: number,
+    y: number,
+    rotation: number,
+    scaleX: number,
+    scaleY: number,
+    originX?: number,
+    originY?: number
+  ): void {
+    const { ctx } = this;
+
+    const ox = originX ?? sw / 2;
+    const oy = originY ?? sh / 2;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.scale(scaleX, scaleY);
+    ctx.drawImage(image, sx, sy, sw, sh, -ox, -oy, sw, sh);
     ctx.restore();
   }
 
