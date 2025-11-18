@@ -15,6 +15,7 @@ import { DebugDrawSystem } from '../ecs/systems/DebugDrawSystem';
 import { TileMapRenderSystem } from '../ecs/systems/TileMapRenderSystem';
 import { DebugOverlaySystem } from '../ecs/systems/DebugOverlaySystem';
 import { ParticleSystem2D } from '../ecs/systems/ParticleSystem2D';
+import { TimelineSystem2D } from '../ecs/systems/TimelineSystem2D';
 
 import { AssetManager } from '../assets/AssetManager';
 import { AudioManager } from '../audio/AudioManager';
@@ -106,8 +107,8 @@ export class Engine {
       debugDrawColliders = false,
       showDebugOverlay = false,
       gravityY = 800, // 默认重力
-      renderer,       // ✅ 新增：外部传入 Renderer
-      rendererMode = 'canvas2d', // ✅ 新增：渲染模式，默认 canvas2d
+      renderer,       // 外部传入 Renderer（优先）
+      rendererMode = 'canvas2d', // 渲染模式，默认 canvas2d
     } = options;
 
     this._width = width;
@@ -119,15 +120,16 @@ export class Engine {
     this.logger = logger ?? new ConsoleLogger();
     this.events = new EventBus();
 
-    // ✅ 统一在这里选择/创建渲染器：
-    // 1. 如果 options.renderer 存在，直接用它
-    // 2. 否则根据 rendererMode 自动创建对应后端
+    // 1) 选择 / 创建渲染器：
+    //    - 有 options.renderer 就直接用
+    //    - 否则根据 rendererMode 创建
     this.renderer =
       renderer ?? this.createRenderer(canvas, backgroundColor, rendererMode);
 
     this.renderer.setClearColor(backgroundColor);
     this.renderer.resize(width, height);
 
+    // 2) 其他子系统
     this.world = new World();
     this.assets = new AssetManager();
     this.audio = new AudioManager();
@@ -139,26 +141,28 @@ export class Engine {
     this.camera.y = 0;
     this.camera.zoom = 1;
 
-    // System 顺序：
+    // ================== System 顺序 ==================
     // 1. 运动（包含世界重力）
     this.world.addSystem(new MotionSystem(gravityY));
     // 2. 动画（根据时间切换 Sprite 帧）
     this.world.addSystem(new AnimationSystem2D(this.assets));
-    // 3. 碰撞检测（写入 contacts）
+    // 3. Timeline（关键帧驱动 Transform）
+    this.world.addSystem(new TimelineSystem2D());
+    // 4. 碰撞检测（写入 contacts）
     this.world.addSystem(new CollisionSystem2D());
-    // 4. 物理分离解算（防止穿透，设置 onGround）
+    // 5. 物理分离解算（防止穿透，设置 onGround）
     this.world.addSystem(new PhysicsSystem2D());
-    // 5. 瓦片地图渲染（背景）
+    // 6. 瓦片地图渲染（背景）
     this.world.addSystem(
       new TileMapRenderSystem(this.renderer, this.camera, this.assets)
     );
-    // 5.5 粒子系统（建议在精灵之前，这样粒子在角色后面 / 看你想要的层级）
+    // 7. 粒子系统（在角色 / 精灵前面还是后面，可以以后改 priority）
     this.world.addSystem(new ParticleSystem2D(this.renderer, this.camera));
-    // 6. 精灵渲染
+    // 8. 精灵渲染
     this.world.addSystem(new RenderSystem(this.renderer, this.camera));
-    // 7. 文本渲染（叠在精灵之上）
+    // 9. 文本渲染（叠在精灵之上）
     this.world.addSystem(new TextRenderSystem(this.renderer, this.camera));
-    // 8. Debug overlay（叠在最上层）
+    // 10. Debug overlay（叠在最上层）
     if (showDebugOverlay) {
       this.world.addSystem(
         new DebugOverlaySystem(this.renderer, this.camera, this.time, {
@@ -170,10 +174,11 @@ export class Engine {
         })
       );
     }
-    // 9. Debug 碰撞框（可选）
+    // 11. Debug 碰撞框（可选）
     if (debugDrawColliders) {
       this.world.addSystem(new DebugDrawSystem(this.renderer, this.camera));
     }
+    // =================================================
 
     this.logger.info('Engine initialized');
   }
@@ -208,7 +213,6 @@ export class Engine {
         this.logger.info('Using WebGLRenderer (auto)');
         return glRenderer;
       } catch (err) {
-        // 这里不要用 warn，避免 Logger 接口没有 warn
         this.logger.info(
           'WebGLRenderer init failed, fallback to Canvas2DRenderer'
         );
@@ -291,7 +295,6 @@ export class Engine {
       throw err;
     }
 
-        this.rafId = requestAnimationFrame(this.loop);
-      };
-    }
-    
+    this.rafId = requestAnimationFrame(this.loop);
+  };
+}

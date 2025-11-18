@@ -25,6 +25,7 @@ export * from './ecs/components/Animator2D';
 export * from './ecs/components/TileMap2D';
 export * from './ecs/components/PhysicsBody2D';
 export * from './ecs/components/ParticleEmitter2D';
+export * from './ecs/components/Timeline2D';
 
 // ==============================
 // ECS Systems
@@ -40,12 +41,14 @@ export * from './ecs/systems/TileMapRenderSystem';
 export * from './ecs/systems/CameraFollowSystem';
 export * from './ecs/systems/DebugOverlaySystem';
 export * from './ecs/systems/ParticleSystem2D';
+export * from './ecs/systems/TimelineSystem2D';
 
 // ==============================
 // TileMap / Particles Utils
 // ==============================
 export * from './ecs/utils/TileMapColliders';
 export * from './ecs/utils/ParticlePresets2D';
+export * from './ecs/utils/TimelinePresets2D';
 
 // ==============================
 // Renderer
