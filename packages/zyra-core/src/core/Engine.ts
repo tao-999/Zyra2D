@@ -1,6 +1,10 @@
+// src/core/Engine.ts
+
 import { World } from './World';
 import type { Renderer } from '../render/Renderer';
 import { Canvas2DRenderer } from '../render/Canvas2DRenderer';
+import { WebGLRenderer } from '../render/WebGLRenderer';
+
 import { RenderSystem } from '../ecs/systems/RenderSystem';
 import { MotionSystem } from '../ecs/systems/MotionSystem';
 import { CollisionSystem2D } from '../ecs/systems/CollisionSystem2D';
@@ -10,6 +14,7 @@ import { TextRenderSystem } from '../ecs/systems/TextRenderSystem';
 import { DebugDrawSystem } from '../ecs/systems/DebugDrawSystem';
 import { TileMapRenderSystem } from '../ecs/systems/TileMapRenderSystem';
 import { DebugOverlaySystem } from '../ecs/systems/DebugOverlaySystem';
+
 import { AssetManager } from '../assets/AssetManager';
 import { AudioManager } from '../audio/AudioManager';
 import { Input } from '../input/Input';
@@ -17,6 +22,14 @@ import { Camera2D } from '../render/Camera2D';
 import { Time } from './Time';
 import { EventBus } from './EventBus';
 import { ConsoleLogger, Logger } from './Logger';
+
+/**
+ * 引擎渲染模式：
+ * - 'canvas2d'：强制使用 Canvas2DRenderer
+ * - 'webgl'   ：强制使用 WebGLRenderer
+ * - 'auto'    ：优先尝试 WebGL，失败则回退到 Canvas2D
+ */
+export type RendererMode = 'canvas2d' | 'webgl' | 'auto';
 
 /**
  * 引擎初始化选项。
@@ -38,6 +51,19 @@ export interface EngineOptions {
 
   /** 世界重力，单位：世界坐标/秒²（默认 800，向下） */
   gravityY?: number;
+
+  /**
+   * 可选：直接传入自定义 Renderer（优先级最高）。
+   * 如果传了这个，rendererMode 将被忽略。
+   */
+  renderer?: Renderer;
+
+  /**
+   * 可选：渲染模式选择：
+   * - 'canvas2d' | 'webgl' | 'auto'
+   * 默认 'canvas2d'
+   */
+  rendererMode?: RendererMode;
 }
 
 /**
@@ -79,6 +105,8 @@ export class Engine {
       debugDrawColliders = false,
       showDebugOverlay = false,
       gravityY = 800, // 默认重力
+      renderer,       // ✅ 新增：外部传入 Renderer
+      rendererMode = 'canvas2d', // ✅ 新增：渲染模式，默认 canvas2d
     } = options;
 
     this._width = width;
@@ -90,7 +118,12 @@ export class Engine {
     this.logger = logger ?? new ConsoleLogger();
     this.events = new EventBus();
 
-    this.renderer = new Canvas2DRenderer(canvas, backgroundColor);
+    // ✅ 统一在这里选择/创建渲染器：
+    // 1. 如果 options.renderer 存在，直接用它
+    // 2. 否则根据 rendererMode 自动创建对应后端
+    this.renderer =
+      renderer ?? this.createRenderer(canvas, backgroundColor, rendererMode);
+
     this.renderer.setClearColor(backgroundColor);
     this.renderer.resize(width, height);
 
@@ -115,7 +148,9 @@ export class Engine {
     // 4. 物理分离解算（防止穿透，设置 onGround）
     this.world.addSystem(new PhysicsSystem2D());
     // 5. 瓦片地图渲染（背景）
-    this.world.addSystem(new TileMapRenderSystem(this.renderer, this.camera, this.assets));
+    this.world.addSystem(
+      new TileMapRenderSystem(this.renderer, this.camera, this.assets)
+    );
     // 6. 精灵渲染
     this.world.addSystem(new RenderSystem(this.renderer, this.camera));
     // 7. 文本渲染（叠在精灵之上）
@@ -138,6 +173,52 @@ export class Engine {
     }
 
     this.logger.info('Engine initialized');
+  }
+
+  /**
+   * 根据模式创建合适的 Renderer。
+   * - 'canvas2d'：Canvas2DRenderer
+   * - 'webgl'   ：WebGLRenderer
+   * - 'auto'    ：优先 WebGL，失败则回退到 Canvas2D
+   */
+  private createRenderer(
+    canvas: HTMLCanvasElement,
+    backgroundColor: string,
+    mode: RendererMode
+  ): Renderer {
+    // 强制 Canvas2D
+    if (mode === 'canvas2d') {
+      this.logger.info('Using Canvas2DRenderer');
+      return new Canvas2DRenderer(canvas, backgroundColor);
+    }
+
+    // 强制 WebGL
+    if (mode === 'webgl') {
+      this.logger.info('Using WebGLRenderer');
+      return new WebGLRenderer(canvas, backgroundColor);
+    }
+
+    // auto 模式：优先 WebGL，失败回退 Canvas2D
+    if (mode === 'auto') {
+      try {
+        const glRenderer = new WebGLRenderer(canvas, backgroundColor);
+        this.logger.info('Using WebGLRenderer (auto)');
+        return glRenderer;
+      } catch (err) {
+        // 这里不要用 warn，避免 Logger 接口没有 warn
+        this.logger.info(
+          'WebGLRenderer init failed, fallback to Canvas2DRenderer'
+        );
+        this.logger.error('WebGLRenderer init error:', err);
+        return new Canvas2DRenderer(canvas, backgroundColor);
+      }
+    }
+
+    // 理论不会走到这里，兜底
+    this.logger.info(
+      `Unknown rendererMode "${mode}", fallback to Canvas2DRenderer`
+    );
+    return new Canvas2DRenderer(canvas, backgroundColor);
   }
 
   /** 启动主循环 */
@@ -207,6 +288,7 @@ export class Engine {
       throw err;
     }
 
-    this.rafId = requestAnimationFrame(this.loop);
-  };
-}
+        this.rafId = requestAnimationFrame(this.loop);
+      };
+    }
+    
