@@ -1,3 +1,5 @@
+// src/ecs/systems/PhysicsSystem2D.ts
+
 import { System } from '../../core/System';
 import { PhysicsBody2D } from '../components/PhysicsBody2D';
 import { Motion2D } from '../components/Motion2D';
@@ -8,7 +10,7 @@ import { ColliderAABB } from '../components/ColliderAABB';
  * PhysicsSystem2D：
  * - 基于 CollisionSystem2D 写入的 contacts 做分离解算
  * - 只处理 dynamic 刚体 vs static/kinematic 的碰撞
- * - 解决穿透问题，并在垂直方向碰撞时设置 onGround
+ * - 解决穿透问题，并在垂直方向碰撞时设置 onGround / 做弹力
  *
  * 要求：
  * - 在 Engine 中：顺序为
@@ -97,18 +99,50 @@ export class PhysicsSystem2D extends System {
           // 垂直方向分离
           t.y += sepY;
 
-          if (sepY > 0 && motion.vy < 0) motion.vy = 0;
-          if (sepY < 0 && motion.vy > 0) motion.vy = 0;
+          // ===== 使用 bounciness 做弹力 =====
+          const eBounce = clamp01(body.bounciness);
+          const epsilonStop = 20; // 速度阈值，小于此就当停下，避免无限抖动
 
-          // 如果是从上方压到地面，认为在地面上
+          if (sepY < 0) {
+            // 被向上推：说明踩在“地面”上（我们的坐标是 y 向下）
+            if (motion.vy > 0) {
+              if (eBounce > 0) {
+                const bouncedVy = -motion.vy * eBounce;
+                if (Math.abs(bouncedVy) < epsilonStop) {
+                  motion.vy = 0;
+                } else {
+                  motion.vy = bouncedVy;
+                }
+              } else {
+                motion.vy = 0;
+              }
+            }
+          } else if (sepY > 0) {
+            // 被向下推：撞到“天花板”
+            if (motion.vy < 0) {
+              if (eBounce > 0) {
+                const bouncedVy = -motion.vy * eBounce;
+                if (Math.abs(bouncedVy) < epsilonStop) {
+                  motion.vy = 0;
+                } else {
+                  motion.vy = bouncedVy;
+                }
+              } else {
+                motion.vy = 0;
+              }
+            }
+          }
+
+          // ===== onGround 判定：只在“踩地面且不再明显弹跳”时为 true =====
           const bodyBottomAfter = t.y + collider.offsetY + collider.height;
           const otherTop = by1;
           const epsilon = 0.5;
 
           if (
-            sepY < 0 &&                    // 被向上推
-            bodyBottomAfter <= otherTop + epsilon &&
-            motion.vy >= 0                 // 之前是往下掉
+            sepY < 0 &&                                // 被向上推（站在上面）
+            bodyBottomAfter <= otherTop + epsilon &&   // 底边贴合对方顶部
+            motion.vy >= 0 &&                          // 当前没有向上的速度
+            eBounce <= 0.01                            // 不怎么弹的物体才算真正 onGround
           ) {
             body.onGround = true;
           }
@@ -116,4 +150,11 @@ export class PhysicsSystem2D extends System {
       }
     }
   }
+}
+
+// 简单 0~1 clamp
+function clamp01(v: number): number {
+  if (v < 0) return 0;
+  if (v > 1) return 1;
+  return v;
 }

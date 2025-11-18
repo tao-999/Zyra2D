@@ -7,6 +7,7 @@ import { PhysicsBody2D } from '../components/PhysicsBody2D';
  * MotionSystem：
  * - 根据加速度/速度更新 Transform 位置
  * - 支持全局重力（只作用于 dynamic PhysicsBody2D）
+ * - 支持阻尼 + 水平摩擦（让 vx 慢慢衰减到 0）
  */
 export class MotionSystem extends System {
   constructor(private gravityY: number = 0) {
@@ -48,11 +49,26 @@ export class MotionSystem extends System {
         }
       }
 
-      // 阻尼
+      // 阻尼（整体乘一个系数，模拟空气阻力）
       if (m.damping > 0) {
         const factor = Math.max(0, 1 - m.damping * dt);
         m.vx *= factor;
         m.vy *= factor;
+      }
+
+      // 水平摩擦：让 vx 逐渐衰减到 0，不会反向
+      if (m.friction > 0 && m.vx !== 0) {
+        const sign = Math.sign(m.vx);
+        const speedX = Math.abs(m.vx);
+        const dec = m.friction * dt; // 本帧最多能减多少速度
+
+        if (dec >= speedX) {
+          // 这一帧就完全停住
+          m.vx = 0;
+        } else {
+          // 向 0 收敛
+          m.vx = (speedX - dec) * sign;
+        }
       }
 
       // 速度 -> 位置

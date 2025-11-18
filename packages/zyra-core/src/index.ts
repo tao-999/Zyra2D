@@ -1,4 +1,4 @@
-// src/index.ts（或者你项目的主入口）
+// src/index.ts
 
 // ==============================
 // Core
@@ -58,7 +58,6 @@ export * from './render/Canvas2DRenderer';
 export * from './render/WebGLRenderer';     //  WebGL 渲染器
 export * from './render/Camera2D';
 
-// （如果将来你想让外部自定义后处理，可以额外导出这些）
 // export * from './render/gl/SpriteBatch';
 // export * from './render/gl/PostProcessEffect';
 
