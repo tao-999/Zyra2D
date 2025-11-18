@@ -1,4 +1,4 @@
-import type { Renderer } from './Renderer';
+import type { Renderer, BlendMode } from './Renderer';
 
 /**
  * v0.1 的 Canvas2D 渲染实现。
@@ -17,6 +17,9 @@ export class Canvas2DRenderer implements Renderer {
     }
     this.ctx = ctx;
     this.clearColor = backgroundColor;
+
+    // 默认混合模式
+    this.setBlendMode('alpha');
   }
 
   setClearColor(color: string): void {
@@ -147,5 +150,14 @@ export class Canvas2DRenderer implements Renderer {
 
   end(): void {
     // Canvas2D 无需特别处理
+  }
+
+  /** 设置混合模式（用于粒子等发光效果） */
+  setBlendMode(mode: BlendMode): void {
+    if (mode === 'alpha') {
+      this.ctx.globalCompositeOperation = 'source-over';
+    } else if (mode === 'additive') {
+      this.ctx.globalCompositeOperation = 'lighter';
+    }
   }
 }

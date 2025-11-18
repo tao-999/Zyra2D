@@ -1,6 +1,6 @@
 // src/render/WebGLRenderer.ts
 
-import type { Renderer } from './Renderer';
+import type { Renderer, BlendMode } from './Renderer';
 import { SpriteBatch } from './gl/SpriteBatch';
 import type { PostProcessEffect } from './gl/PostProcessEffect';
 import { ShaderProgram } from './gl/ShaderProgram';
@@ -29,6 +29,9 @@ export class WebGLRenderer implements Renderer {
   // 后处理效果
   private postEffect: PostProcessEffect | null = null;
   private startTime = performance.now();
+
+  // 当前混合模式
+  private blendMode: BlendMode = 'alpha';
 
   constructor(canvas: HTMLCanvasElement, backgroundColor = '#000000') {
     this.canvas = canvas;
@@ -409,6 +412,19 @@ export class WebGLRenderer implements Renderer {
       effect.init(gl);
     }
     this.postEffect = effect;
+  }
+
+  /** 设置混合模式（用于粒子等发光效果） */
+  setBlendMode(mode: BlendMode): void {
+    if (this.blendMode === mode) return;
+    this.blendMode = mode;
+
+    const gl = this.gl;
+    if (mode === 'alpha') {
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    } else if (mode === 'additive') {
+      gl.blendFunc(gl.SRC_ALPHA, gl.ONE); // 发光
+    }
   }
 
   // ============ 场景 FBO & blit ============

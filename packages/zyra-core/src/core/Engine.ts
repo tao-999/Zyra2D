@@ -14,6 +14,7 @@ import { TextRenderSystem } from '../ecs/systems/TextRenderSystem';
 import { DebugDrawSystem } from '../ecs/systems/DebugDrawSystem';
 import { TileMapRenderSystem } from '../ecs/systems/TileMapRenderSystem';
 import { DebugOverlaySystem } from '../ecs/systems/DebugOverlaySystem';
+import { ParticleSystem2D } from '../ecs/systems/ParticleSystem2D';
 
 import { AssetManager } from '../assets/AssetManager';
 import { AudioManager } from '../audio/AudioManager';
@@ -151,6 +152,8 @@ export class Engine {
     this.world.addSystem(
       new TileMapRenderSystem(this.renderer, this.camera, this.assets)
     );
+    // 5.5 粒子系统（建议在精灵之前，这样粒子在角色后面 / 看你想要的层级）
+    this.world.addSystem(new ParticleSystem2D(this.renderer, this.camera));
     // 6. 精灵渲染
     this.world.addSystem(new RenderSystem(this.renderer, this.camera));
     // 7. 文本渲染（叠在精灵之上）

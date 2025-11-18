@@ -1,5 +1,12 @@
 /**
- * 抽象渲染接口。具体实现可以是 Canvas2D / WebGL2。
+ * 粒子 / 精灵渲染的混合模式：
+ * - 'alpha'    普通透明混合
+ * - 'additive' 发光混合（适合火焰 / 魔法 / 爆炸）
+ */
+export type BlendMode = 'alpha' | 'additive';
+
+/**
+ * 抽象渲染接口。具体实现可以是 Canvas2D / WebGL。
  */
 export interface Renderer {
   /** 清屏 */
@@ -85,4 +92,10 @@ export interface Renderer {
 
   /** 视口尺寸变化时调用 */
   resize(width: number, height: number): void;
+
+  /**
+   * 可选：设置混合模式。
+   * 实现类可以选择不支持（不实现）这个接口。
+   */
+  setBlendMode?(mode: BlendMode): void;
 }
