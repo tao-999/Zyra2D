@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "strict": true,
+    "noImplicitAny": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowJs": false,
+    "resolveJsonModule": true,
+    "isolatedModules": false,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "newLine": "lf",
+    "lib": ["DOM", "ESNext"]
+  }
+}

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>zryajs - Meteor Dodge Demo</title>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #111;
+        color: #fff;
+        font-family: sans-serif;
+        height: 100%;
+        overflow: hidden;
+      }
+      #game-container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
+      #hud {
+        padding: 8px 12px;
+        font-size: 12px;
+        background: #181818;
+        border-bottom: 1px solid #333;
+      }
+      canvas {
+        flex: 1;
+        display: block;
+        background: #05070b;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game-container">
+      <div id="hud">
+        ← / → 或 A / D 移动，避开从天而降的红块。被砸中按 R 重开。
+      </div>
+      <canvas id="game" width="800" height="450"></canvas>
+    </div>
+    <script src="dist/main.js" type="module"></script>
+  </body>
+</html>

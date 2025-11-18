@@ -1,0 +1,15 @@
+{
+    "name": "zryajs-example-basic",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "dev": "esbuild src/main.ts --bundle --outfile=dist/main.js --servedir=.",
+        "build": "esbuild src/main.ts --bundle --outfile=dist/main.js"
+    },
+    "dependencies": {
+        "zryajs": "workspace:*"
+    },
+    "devDependencies": {
+        "esbuild": "^0.24.0"
+    }
+}

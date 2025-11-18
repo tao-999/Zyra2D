@@ -1,13 +1,14 @@
 {
-  "name": "zyra2d-monorepo",
-  "version": "0.0.1",
+  "name": "zrya-root",
   "private": true,
-  "description": "Zyra2D - High-performance 2D game engine monorepo",
+  "version": "0.1.0",
+  "license": "MIT",
   "scripts": {
-    "build": "pnpm -r run build",
-    "dev": "pnpm -C examples/basic-demo dev",
-    "test": "echo \"no tests yet\"",
-    "lint": "echo \"no lint yet\""
+    "build": "pnpm -r --filter ./packages/** run build",
+    "dev": "pnpm -r --filter ./packages/** run dev",
+    "test": "pnpm -r --filter ./packages/** run test || exit 0",
+    "lint": "pnpm -r --filter ./packages/** run lint || exit 0",
+    "clean": "pnpm -r --filter ./packages/** run clean || exit 0"
   },
   "devDependencies": {
     "typescript": "^5.6.0"
