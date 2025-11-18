@@ -1,7 +1,7 @@
 import type { Renderer } from './Renderer';
 
 /**
- * Simple Canvas2D renderer, used as v0.1 implementation & fallback.
+ * v0.1 的 Canvas2D 渲染实现，之后可以被 WebGL2 替换。
  */
 export class Canvas2DRenderer implements Renderer {
   private readonly ctx: CanvasRenderingContext2D;
@@ -26,7 +26,7 @@ export class Canvas2DRenderer implements Renderer {
   }
 
   begin(): void {
-    // No-op for Canvas2D
+    // Canvas2D 无需特别处理
   }
 
   drawSprite(
@@ -47,6 +47,6 @@ export class Canvas2DRenderer implements Renderer {
   }
 
   end(): void {
-    // No-op for Canvas2D
+    // Canvas2D 无需特别处理
   }
 }

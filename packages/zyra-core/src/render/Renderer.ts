@@ -1,6 +1,5 @@
 /**
- * Abstract rendering interface.
- * Concrete implementations: Canvas2D, WebGL2, etc.
+ * 抽象渲染接口。具体实现可以是 Canvas2D / WebGL2。
  */
 export interface Renderer {
   clear(): void;

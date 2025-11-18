@@ -1,8 +1,7 @@
 import type { World } from './World';
 
 /**
- * Base class for all systems.
- * System contains logic, runs every frame.
+ * System：每帧执行的逻辑单元。
  */
 export abstract class System {
   world!: World;

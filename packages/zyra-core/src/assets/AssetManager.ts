@@ -1,6 +1,6 @@
 /**
- * Very small asset manager for v0.1:
- * only supports loading and caching HTMLImageElement.
+ * v0.1 资源管理器：
+ * 只做 Image 加载 + 缓存。
  */
 export class AssetManager {
   private imageCache = new Map<string, HTMLImageElement>();
